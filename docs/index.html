@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bugs C Subtils - Collection et Guides</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #fff;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .header {
+            margin-bottom: 60px;
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        .header p {
+            font-size: 1.3rem;
+            color: #a0a0a0;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #6c7293;
+            font-style: italic;
+        }
+
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px 30px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover::before {
+            height: 6px;
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .card h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .card p {
+            color: #b0b0b0;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .card-btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9rem;
+        }
+
+        .card-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .card-btn.critical {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+        }
+
+        .card-btn.critical:hover {
+            box-shadow: 0 10px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .footer {
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #6c7293;
+            font-size: 0.9rem;
+        }
+
+        .footer a {
+            color: #4ecdc4;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+            }
+            to {
+                text-shadow: 0 0 30px rgba(76, 236, 196, 0.5), 0 0 40px rgba(69, 183, 209, 0.3);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .header p {
+                font-size: 1.1rem;
+            }
+            
+            .cards-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .card {
+                padding: 30px 20px;
+            }
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 40px 0;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #4ecdc4;
+            display: block;
+        }
+
+        .stat-label {
+            color: #a0a0a0;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐛 Bugs C Subtils</h1>
+            <p>Collection des pièges les plus vicieux en programmation C</p>
+            <p class="subtitle">Guides pratiques pour éviter les bugs critiques</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <span class="stat-number">15+</span>
+                <span class="stat-label">Types de bugs</span>
+            </div>
+            <div class="stat">
+                <span class="stat-number">🔥</span>
+                <span class="stat-label">Criticité</span>
+            </div>
+            <div class="stat">
+                <span class="stat-number">⏰</span>
+                <span class="stat-label">Temps debug</span>
+            </div>
+        </div>
+
+        <div class="cards-container">
+            <div class="card">
+                <span class="card-icon">🎯</span>
+                <h2>Collection Complète</h2>
+                <p>
+                    Explorez le bestiaire complet des bugs subtils en C : débordements d'entiers, 
+                    corruption mémoire, pièges de compilation, et bien plus. 
+                    Un guide exhaustif avec exemples pratiques et solutions.
+                </p>
+                <a href="subtle_c_bugs_collection.html" class="card-btn critical">
+                    Explorer la Collection
+                </a>
+            </div>
+
+            <div class="card">
+                <span class="card-icon">🔄</span>
+                <h2>Bug Boucle uint8_t</h2>
+                <p>
+                    Guide ultra-simplifié sur le piège classique des boucles décroissantes 
+                    avec uint8_t. Comprenez pourquoi votre microcontrôleur se fige 
+                    et comment l'éviter définitivement.
+                </p>
+                <a href="unsigned_loop_bug_presentation.html" class="card-btn">
+                    Voir le Guide
+                </a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>
+                📚 Ressources éducatives pour la programmation C et systèmes embarqués<br>
+                🎓 Conçu pour l'apprentissage et la prévention des erreurs critiques<br>
+                <a href="https://github.com/s-celles/bugs-c-subtils" target="_blank">
+                    Voir le dépôt GitHub
+                </a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Animation d'entrée pour les cartes
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 200);
+            });
+        });
+
+        // Effet parallax léger au scroll
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const header = document.querySelector('.header h1');
+            if (header) {
+                header.style.transform = `translateY(${scrolled * 0.1}px)`;
+            }
+        });
+    </script>
+</body>
+</html>
