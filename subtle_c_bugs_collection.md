@@ -520,5 +520,5 @@ uint32_t read_big_endian(uint8_t *data) {
 *Ce guide est un document vivant. N'hésitez pas à l'enrichir avec vos propres découvertes de bugs subtils !*
 
 **Version :** 1.0  
-**Dernière mise à jour :** Janvier 2025  
+**Dernière mise à jour :** Juillet 2025  
 **Licence :** Libre de droits pour usage éducatif
