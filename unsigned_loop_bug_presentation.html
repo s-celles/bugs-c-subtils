@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Le Bug des Boucles Décroissantes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .slide {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transform: translateY(20px);
+            opacity: 0;
+            animation: slideIn 0.6s ease forwards;
+        }
+
+        @keyframes slideIn {
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        h1 {
+            color: #e74c3c;
+            font-size: 2.5em;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            color: #2c3e50;
+            font-size: 2em;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            color: #34495e;
+            font-size: 1.4em;
+            margin: 20px 0 10px 0;
+        }
+
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .code-block::before {
+            content: attr(data-lang);
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-size: 0.8em;
+            color: #95a5a6;
+        }
+
+        .highlight-error {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .highlight-correct {
+            background: #27ae60;
+            color: white;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .warning-box {
+            background: #f39c12;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 5px solid #e67e22;
+        }
+
+        .danger-box {
+            background: #e74c3c;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 5px solid #c0392b;
+        }
+
+        .success-box {
+            background: #27ae60;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 5px solid #229954;
+        }
+
+        .demo-container {
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .binary-display {
+            font-family: 'Courier New', monospace;
+            font-size: 1.2em;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .interactive-demo {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        button {
+            background: #3498db;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 5px;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        .step-counter {
+            font-size: 1.5em;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            border: 2px solid #bdc3c7;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .comparison-table th {
+            background: #34495e;
+            color: white;
+        }
+
+        .comparison-table .error-row {
+            background: #ffeaa7;
+        }
+
+        .comparison-table .success-row {
+            background: #a8e6cf;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Slide 1: Titre -->
+        <div class="slide">
+            <h1>🐛 Le Piège Mortel des Boucles Décroissantes</h1>
+            <div style="text-align: center; font-size: 1.3em; color: #7f8c8d; margin-top: 20px;">
+                <strong>Types Non Signés vs Boucles for(;;i--)</strong><br>
+                <em>Un bug subtil qui peut paralyser votre microcontrôleur</em>
+            </div>
+        </div>
+
+        <!-- Slide 2: Le Code Problématique -->
+        <div class="slide">
+            <h2>🔍 Le Code qui Pose Problème</h2>
+            
+            <div class="code-block" data-lang="C">
+// ❌ CODE BUGGÉ - Boucle infinie garantie !
+void ad5144_write_rdac(uint8_t rdac_channel, uint8_t value) {
+    // ...
+    <span class="highlight-error">for (uint8_t i = 15; i >= 0; i--)</span> {  // PIÈGE !
+        SDI = (configpot >> i) & 1;
+        // ... transmission SPI
+    }
+    // Ce code ne sera JAMAIS atteint !
+}</div>
+
+            <div class="danger-box">
+                <strong>⚠️ Symptôme :</strong> Le microcontrôleur se fige, aucune tension n'apparaît sur W4, le système semble "mort".
+            </div>
+        </div>
+
+        <!-- Slide 3: Pourquoi ça ne marche pas -->
+        <div class="slide">
+            <h2>🤔 Mais Pourquoi ça ne Marche Pas ?</h2>
+            
+            <h3>Le Problème : uint8_t est un type NON SIGNÉ</h3>
+            
+            <div class="demo-container">
+                <div style="text-align: center;">
+                    <strong>Valeurs possibles pour uint8_t :</strong><br>
+                    <span class="binary-display">0 → 1 → 2 → ... → 254 → 255 → <span style="color: #e74c3c;">0 (WRAP!)</span></span>
+                </div>
+            </div>
+
+            <div class="interactive-demo">
+                <p><strong>Simulation de la boucle :</strong></p>
+                <div id="loopDemo">
+                    <div>Valeur de i : <span class="step-counter" id="iValue">15</span></div>
+                    <div>Condition i >= 0 : <span id="condition" style="color: #27ae60;">✅ VRAIE</span></div>
+                    <div>Étape : <span id="stepNumber">0</span></div>
+                </div>
+                <button onclick="nextStep()">Étape Suivante</button>
+                <button onclick="resetDemo()">Reset</button>
+            </div>
+        </div>
+
+        <!-- Slide 4: Le Mécanisme du Bug -->
+        <div class="slide">
+            <h2>⚙️ Le Mécanisme du Bug</h2>
+            
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Étape</th>
+                        <th>Valeur de i</th>
+                        <th>Binaire (8 bits)</th>
+                        <th>Condition i >= 0</th>
+                        <th>Continue ?</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Début</td>
+                        <td>15</td>
+                        <td>00001111</td>
+                        <td>✅ Vraie</td>
+                        <td>Oui</td>
+                    </tr>
+                    <tr>
+                        <td>...</td>
+                        <td>...</td>
+                        <td>...</td>
+                        <td>✅ Vraie</td>
+                        <td>Oui</td>
+                    </tr>
+                    <tr>
+                        <td>Avant le piège</td>
+                        <td>1</td>
+                        <td>00000001</td>
+                        <td>✅ Vraie</td>
+                        <td>Oui</td>
+                    </tr>
+                    <tr>
+                        <td>Avant le piège</td>
+                        <td>0</td>
+                        <td>00000000</td>
+                        <td>✅ Vraie</td>
+                        <td>Oui</td>
+                    </tr>
+                    <tr class="error-row">
+                        <td><strong>LE PIÈGE !</strong></td>
+                        <td><strong>255</strong></td>
+                        <td><strong>11111111</strong></td>
+                        <td><strong>✅ Vraie (!!)</strong></td>
+                        <td><strong>OUI → INFINI</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="warning-box">
+                <strong>🔑 Point clé :</strong> Un uint8_t ne peut JAMAIS être négatif ! 
+                La condition <code>i >= 0</code> est <em>toujours vraie</em> pour un type non signé.
+            </div>
+        </div>
+
+        <!-- Slide 5: Solutions -->
+        <div class="slide">
+            <h2>✅ Les Solutions qui Fonctionnent</h2>
+            
+            <h3>Solution 1 : Type Signé (Recommandée)</h3>
+            <div class="code-block" data-lang="C">
+// ✅ SOLUTION SIMPLE ET EFFICACE
+<span class="highlight-correct">for (int i = 15; i >= 0; i--)</span> {
+    SDI = (configpot >> i) & 1;
+    // ... reste du code
+}
+// int peut devenir négatif → condition devient fausse → boucle s'arrête</div>
+
+            <h3>Solution 2 : Boucle Décroissante Sécurisée</h3>
+            <div class="code-block" data-lang="C">
+// ✅ ASTUCE : Boucle de 16 à 1
+<span class="highlight-correct">for (uint8_t i = 16; i > 0; i--)</span> {
+    SDI = (configpot >> (i-1)) & 1;  // Utilise (i-1) = 15→0
+    // ... reste du code
+}</div>
+
+            <h3>Solution 3 : Boucle Croissante</h3>
+            <div class="code-block" data-lang="C">
+// ✅ INVERSION DE LA LOGIQUE
+<span class="highlight-correct">for (uint8_t i = 0; i < 16; i++)</span> {
+    SDI = (configpot >> (15-i)) & 1;  // Calcul de l'index décroissant
+    // ... reste du code
+}</div>
+        </div>
+
+        <!-- Slide 6: Comparaison Pratique -->
+        <div class="slide">
+            <h2>⚖️ Comparaison des Solutions</h2>
+            
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Solution</th>
+                        <th>Lisibilité</th>
+                        <th>Performance</th>
+                        <th>Sécurité</th>
+                        <th>Recommandation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="success-row">
+                        <td><strong>int i = 15; i >= 0; i--</strong></td>
+                        <td>⭐⭐⭐⭐⭐</td>
+                        <td>⭐⭐⭐⭐</td>
+                        <td>⭐⭐⭐⭐⭐</td>
+                        <td><strong>MEILLEURE</strong></td>
+                    </tr>
+                    <tr class="success-row">
+                        <td><strong>uint8_t i = 16; i > 0; i--</strong></td>
+                        <td>⭐⭐⭐</td>
+                        <td>⭐⭐⭐⭐⭐</td>
+                        <td>⭐⭐⭐⭐</td>
+                        <td>Bonne alternative</td>
+                    </tr>
+                    <tr>
+                        <td><strong>uint8_t i = 0; i < 16; i++</strong></td>
+                        <td>⭐⭐</td>
+                        <td>⭐⭐⭐⭐⭐</td>
+                        <td>⭐⭐⭐⭐⭐</td>
+                        <td>Acceptable</td>
+                    </tr>
+                    <tr class="error-row">
+                        <td><strong>uint8_t i = 15; i >= 0; i--</strong></td>
+                        <td>💀</td>
+                        <td>💀</td>
+                        <td>💀</td>
+                        <td><strong>INTERDITE</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Slide 7: Comment Détecter ce Bug -->
+        <div class="slide">
+            <h2>🔍 Comment Détecter ce Bug</h2>
+            
+            <h3>Signaux d'Alerte</h3>
+            <ul>
+                <li><strong>Système qui "se fige"</strong> de manière inexpliquée</li>
+                <li><strong>Boucle qui ne se termine jamais</strong></li>
+                <li><strong>Microcontrôleur qui ne répond plus</strong></li>
+                <li><strong>Code qui fonctionne en simulation mais pas sur hardware</strong></li>
+            </ul>
+
+            <h3>Techniques de Debug</h3>
+            <div class="code-block" data-lang="C">
+// 🔧 Ajout de debug pour identifier le problème
+for (uint8_t i = 15; i >= 0; i--) {
+    printf("i = %d\n", i);  // ← Ceci révélerait le problème !
+    if (debug_counter++ > 20) break;  // ← Protection anti-boucle infinie
+    // ... votre code
+}</div>
+
+            <div class="success-box">
+                <strong>💡 Pro Tip :</strong> Activez toujours les warnings du compilateur ! 
+                Certains compilateurs peuvent détecter ce pattern dangereux.
+            </div>
+        </div>
+
+        <!-- Slide 8: Bonnes Pratiques -->
+        <div class="slide">
+            <h2>📚 Bonnes Pratiques</h2>
+            
+            <h3>✅ À Faire</h3>
+            <ul>
+                <li>Utiliser <strong>int</strong> pour les compteurs de boucle sauf contrainte forte</li>
+                <li>Privilégier les <strong>boucles croissantes</strong> quand possible</li>
+                <li>Tester les <strong>cas limites</strong> (0, valeurs maximales)</li>
+                <li>Activer les <strong>warnings du compilateur</strong></li>
+                <li>Utiliser des <strong>outils d'analyse statique</strong></li>
+            </ul>
+
+            <h3>❌ À Éviter</h3>
+            <ul>
+                <li>Boucles décroissantes avec types <strong>non signés</strong></li>
+                <li>Conditions <code>unsigned_var >= 0</code> (toujours vraie !)</li>
+                <li>Optimisations prématurées avec types courts</li>
+                <li>Tests insuffisants sur hardware réel</li>
+            </ul>
+
+            <div class="warning-box">
+                <strong>⚡ Règle d'Or :</strong> 
+                "Si vous hésitez entre int et uint8_t pour un compteur de boucle, choisissez int !"
+            </div>
+        </div>
+
+        <!-- Slide 9: Conclusion -->
+        <div class="slide">
+            <h2>🎯 Points Clés à Retenir</h2>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+                <div class="danger-box">
+                    <h3>🚫 Le Piège</h3>
+                    <p>Les types non signés ne peuvent jamais être négatifs</p>
+                    <p><code>uint8_t i >= 0</code> est toujours vrai</p>
+                    <p>Boucle infinie garantie !</p>
+                </div>
+                
+                <div class="success-box">
+                    <h3>✅ La Solution</h3>
+                    <p>Utilisez <code>int</code> pour les compteurs</p>
+                    <p>Ou adaptez la logique de boucle</p>
+                    <p>Testez toujours les cas limites !</p>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px; font-size: 1.2em; color: #2c3e50;">
+                <strong>Ce bug subtil peut coûter des heures de debug...</strong><br>
+                <em>Mais maintenant vous savez comment l'éviter ! 🎉</em>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentValue = 15;
+        let stepCount = 0;
+        
+        function nextStep() {
+            const iValueEl = document.getElementById('iValue');
+            const conditionEl = document.getElementById('condition');
+            const stepNumberEl = document.getElementById('stepNumber');
+            
+            stepCount++;
+            stepNumberEl.textContent = stepCount;
+            
+            if (currentValue > 0) {
+                currentValue--;
+                iValueEl.textContent = currentValue;
+                conditionEl.innerHTML = '<span style="color: #27ae60;">✅ VRAIE</span>';
+            } else if (currentValue === 0) {
+                // Simulation du wrap-around
+                currentValue = 255;
+                iValueEl.textContent = currentValue;
+                conditionEl.innerHTML = '<span style="color: #e74c3c;">✅ VRAIE (PIÈGE!)</span>';
+                iValueEl.style.color = '#e74c3c';
+                iValueEl.style.fontWeight = 'bold';
+            } else {
+                // Déjà dans la boucle infinie
+                conditionEl.innerHTML = '<span style="color: #e74c3c;">✅ TOUJOURS VRAIE → BOUCLE INFINIE!</span>';
+            }
+        }
+        
+        function resetDemo() {
+            currentValue = 15;
+            stepCount = 0;
+            document.getElementById('iValue').textContent = '15';
+            document.getElementById('iValue').style.color = '#e74c3c';
+            document.getElementById('iValue').style.fontWeight = 'bold';
+            document.getElementById('condition').innerHTML = '<span style="color: #27ae60;">✅ VRAIE</span>';
+            document.getElementById('stepNumber').textContent = '0';
+        }
+
+        // Animation des slides au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            const slides = document.querySelectorAll('.slide');
+            slides.forEach((slide, index) => {
+                slide.style.animationDelay = `${index * 0.2}s`;
+            });
+        });
+    </script>
+</body>
+</html>

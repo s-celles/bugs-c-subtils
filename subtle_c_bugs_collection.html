@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Les Bugs Subtils - Bestiaire du Développeur</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 50%, #e74c3c 100%);
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .header p {
+            font-size: 1.3em;
+            opacity: 0.9;
+        }
+
+        .bug-category {
+            background: white;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            transform: translateY(20px);
+            opacity: 0;
+            animation: slideUp 0.6s ease forwards;
+        }
+
+        @keyframes slideUp {
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .category-header {
+            padding: 25px;
+            color: white;
+            font-size: 1.5em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .category-header::after {
+            content: '⬇️';
+            position: absolute;
+            right: 25px;
+            transition: transform 0.3s ease;
+        }
+
+        .category-header.collapsed::after {
+            transform: rotate(-90deg);
+        }
+
+        .arithmetic-bugs { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        .type-bugs { background: linear-gradient(135deg, #f39c12, #e67e22); }
+        .memory-bugs { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+        .concurrency-bugs { background: linear-gradient(135deg, #1abc9c, #16a085); }
+        .macro-bugs { background: linear-gradient(135deg, #34495e, #2c3e50); }
+        .hardware-bugs { background: linear-gradient(135deg, #e67e22, #d35400); }
+
+        .category-content {
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease;
+        }
+
+        .category-content.expanded {
+            max-height: 2000px;
+            padding: 25px;
+        }
+
+        .bug-item {
+            background: #f8f9fa;
+            border-left: 5px solid #e74c3c;
+            margin-bottom: 25px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .bug-header {
+            background: #ecf0f1;
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .bug-header:hover {
+            background: #d5dbdb;
+        }
+
+        .bug-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .bug-severity {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .severity-critical { background: #e74c3c; color: white; }
+        .severity-high { background: #f39c12; color: white; }
+        .severity-medium { background: #f1c40f; color: #2c3e50; }
+
+        .bug-details {
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+        }
+
+        .bug-details.expanded {
+            max-height: 1500px;
+            padding: 20px;
+        }
+
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .code-block::before {
+            content: attr(data-lang);
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-size: 0.8em;
+            color: #95a5a6;
+        }
+
+        .highlight-error {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .highlight-correct {
+            background: #27ae60;
+            color: white;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .demo-section {
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .demo-output {
+            background: #2c3e50;
+            color: #e74c3c;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin-top: 10px;
+        }
+
+        .warning-box, .danger-box, .info-box {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 5px solid;
+        }
+
+        .warning-box {
+            background: #fef9e7;
+            border-left-color: #f39c12;
+            color: #8a6d3b;
+        }
+
+        .danger-box {
+            background: #f2dede;
+            border-left-color: #e74c3c;
+            color: #a94442;
+        }
+
+        .info-box {
+            background: #d9edf7;
+            border-left-color: #3498db;
+            color: #31708f;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+
+        .interactive-demo {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        button {
+            background: #3498db;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .navigation {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .nav-button {
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="navigation">
+        <button class="nav-button" onclick="expandAll()">Tout Ouvrir</button>
+        <button class="nav-button" onclick="collapseAll()">Tout Fermer</button>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🐛 Le Bestiaire des Bugs Subtils</h1>
+            <p>Une collection des pièges les plus vicieux en programmation C/Embarqué</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">15+</div>
+                <div>Types de bugs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">🔥</div>
+                <div>Niveau critique</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">⏰</div>
+                <div>Heures de debug</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">💡</div>
+                <div>Solutions fournies</div>
+            </div>
+        </div>
+
+        <!-- Catégorie 1: Bugs Arithmétiques -->
+        <div class="bug-category">
+            <div class="category-header arithmetic-bugs" onclick="toggleCategory(this)">
+                🔢 Bugs Arithmétiques et de Débordement
+            </div>
+            <div class="category-content">
+                <!-- Bug 1: Integer Overflow -->
+                <div class="bug-item">
+                    <div class="bug-header" onclick="toggleBug(this)">
+                        <div class="bug-title">Débordement d'Entiers Silencieux</div>
+                        <span class="bug-severity severity-critical">CRITIQUE</span>
+                        <span>Le débordement qui ne dit pas son nom</span>
+                    </div>
+                    <div class="bug-details">
+                        <div class="code-block" data-lang="C">
+// ❌ BUG : Débordement silencieux
+uint8_t temperature = 200;  // 200°C
+uint8_t offset = 100;       // +100°C
+<span class="highlight-error">uint8_t result = temperature + offset;</span>  // 300 → 44 (wrap!)
+
+// Résultat : 44°C au lieu de 300°C !
+if (result > 250) {
+    emergency_shutdown();  // ← Ne sera JAMAIS appelé !
+}</div>
+
+                        <div class="demo-section">
+                            <strong>Simulation du débordement :</strong>
+                            <div class="interactive-demo">
+                                <div>200 + 100 = <span id="overflowResult">300</span></div>
+                                <div>Dans uint8_t : <span id="wrappedResult" style="color: #e74c3c;">44</span></div>
+                                <button onclick="demonstrateOverflow()">Voir l'Arithmétique</button>
+                            </div>
+                        </div>
+
+                        <div class="danger-box">
+                            <strong>Impact :</strong> Calculs faux, décisions erronées, sécurité compromise
+                        </div>
+
+                        <div class="code-block" data-lang="C">
+// ✅ SOLUTIONS
+// 1. Vérification avant calcul
+if (temperature > UINT8_MAX - offset) {
+    // Gestion du débordement
+    handle_overflow();
+}
+
+// 2. Utilisation de types plus larges
+uint16_t safe_result = (uint16_t)temperature + offset;
+
+// 3. Arithmétique saturée
+uint8_t saturated_add(uint8_t a, uint8_t b) {
+    uint16_t result = (uint16_t)a + b;
+    return (result > UINT8_MAX) ? UINT8_MAX : result;
+}</div>
+                    </div>
+                </div>
+
+                <!-- Bug 2: Signed/Unsigned Comparison -->
+                <div class="bug-item">
+                    <div class="bug-header" onclick="toggleBug(this)">
+                        <div class="bug-title">Comparaisons Signées/Non Signées</div>
+                        <span class="bug-severity severity-high">ÉLEVÉ</span>
+                        <span>Quand -1 devient plus grand que 1000</span>
+                    </div>
+                    <div class="bug-details">
+                        <div class="code-block" data-lang="C">
+// ❌ BUG : Conversion implicite
+int signed_value = -1;
+uint32_t unsigned_value = 1000;
+
+<span class="highlight-error">if (signed_value < unsigned_value)</span> {  // FAUX !
+    printf("Logic OK");
+} else {
+    printf("WTF?!");  // ← Sera imprimé !
+}
+
+// Explication : -1 devient 0xFFFFFFFF = 4294967295</div>
+
+                        <div class="demo-section">
+                            <div class="demo-output">
+Comparaison: -1 < 1000
+Résultat attendu: TRUE
+Résultat réel: FALSE
+Raison: -1 → 0xFFFFFFFF (4294967295) > 1000</div>
+                        </div>
+
+                        <div class="code-block" data-lang="C">
+// ✅ SOLUTIONS
+// 1. Cast explicite
+if (signed_value < (int)unsigned_value) { ... }
+
+// 2. Vérification de signe
+if (signed_value < 0 || (uint32_t)signed_value < unsigned_value) { ... }
+
+// 3. Utilisation cohérente des types
+int32_t both_signed = signed_value;
+int32_t other_signed = (int32_t)unsigned_value;</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Catégorie 2: Bugs de Types -->
+        <div class="bug-category">
+            <div class="category-header type-bugs" onclick="toggleCategory(this)">
+                🎭 Bugs de Promotion et Conversion de Types
+            </div>
+            <div class="category-content">
+                <!-- Bug 3: Integer Promotion -->
+                <div class="bug-item">
+                    <div class="bug-header" onclick="toggleBug(this)">
+                        <div class="bug-title">Promotion d'Entiers Surprise</div>
+                        <span class="bug-severity severity-medium">MOYEN</span>
+                        <span>Quand uint8_t devient int</span>
+                    </div>
+                    <div class="bug-details">
+                        <div class="code-block" data-lang="C">
+// ❌ BUG : Promotion implicite
+uint8_t a = 200;
+uint8_t b = 100;
+
+<span class="highlight-error">uint8_t result = ~a + b;</span>  // Surprise !
+
+// Ce qui se passe réellement :
+// ~a → ~(int)200 → ~200 → -201 (en int)
+// -201 + 100 = -101
+// (uint8_t)(-101) = 155</div>
+
+                        <div class="warning-box">
+                            <strong>Règle :</strong> Tous les types plus petits qu'int sont promus à int dans les expressions
+                        </div>
+
+                        <div class="code-block" data-lang="C">
+// ✅ SOLUTION : Cast explicite
+uint8_t result = (uint8_t)(~a) + b;  // Force le calcul en uint8_t</div>
+                    </div>
+                </div>
+
+                <!-- Bug 4: Char Signedness -->
+                <div class="bug-item">
+                    <div class="bug-header" onclick="toggleBug(this)">
+                        <div class="bug-title">Le Mystère du char Signé/Non Signé</div>
+                        <span class="bug-severity severity-high">ÉLEVÉ</span>
+                        <span>Implementation-defined nightmare</span>
+                    </div>
+                    <div class="bug-details">
+                        <div class="code-block" data-lang="C">
+// ❌ BUG : Comportement non défini selon la plateforme
+char buffer[256];
+// ... lecture de données binaires
+
+<span class="highlight-error">if (buffer[i] > 127)</span> {  // Peut ne jamais être vrai !
+    handle_high_value();
+}
+
+// Sur certaines plateformes : char est signé (-128 à 127)
+// Sur d'autres : char est non signé (0 à 255)</div>
+
+                        <div class="demo-section">
+                            <strong>Test de votre plateforme :</strong>
+                            <div class="interactive-demo">
+                                <div>Valeur de CHAR_MAX : <span id="charMax">?</span></div>
+                                <div>char est : <span id="charSign">?</span></div>
+                                <button onclick="testCharSign()">Tester</button>
+                            </div>
+                        </div>
+
+                        <div class="code-block" data-lang="C">
+// ✅ SOLUTIONS
+// 1. Types explicites
+unsigned char buffer[256];  // Toujours non signé
+
+// 2. Cast de sécurité
+if ((unsigned char)buffer[i] > 127) { ... }
+
+// 3. Vérification de compilation
+#if CHAR_MIN < 0
+    #error "char must be unsigned for this code"
+#endif</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Catégorie 3: Bugs Mémoire -->
+        <div class="bug-category">
+            <div class="category-header memory-bugs" onclick="toggleCategory(this)">
+                💾 Bugs Mémoire et Pointeurs
+            </div>
+            <div class="category-content">
+                <!-- Bug 5: Buffer Overflow -->
+                <div class="bug-item">
+                    <div class="bug-header" onclick="toggleBug(this)">
+                        <div class="bug-title">Débordement de Tampon Classique</div>
+                        <span class="bug-severity severity-critical">CRITIQUE</span>
+                        <span>La porte d'entrée des attaques</span>
+                    </div>
+                    <div class="bug-details">
+                        <div class="code-block" data-lang="C">
+// ❌ BUG : Pas de vérification de limites
+void process_command(char *input) {
+    char buffer[64];
+    <span class="highlight-error">strcpy(buffer, input);</span>  // DANGER !
+    
+    // Si input > 64 caractères → corruption mémoire
+    execute_command(buffer);
+}</div>
+
+                        <div class="danger-box">
+                            <strong>Conséquences :</strong> Crash, corruption de données, exécution de code malveillant
+                        </div>
+
+                        <div class="code-block" data-lang="C">
+// ✅ SOLUTIONS
+// 1. Fonctions sécurisées
+strncpy(buffer, input, sizeof(buffer) - 1);
+buffer[sizeof(buffer) - 1] = '\0';
+
+// 2. Vérification explicite
+if (strlen(input) >= sizeof(buffer)) {
+    handle_error("Input too long");
+    return;
+}
+
+// 3. Utilisation de snprintf
+snprintf(buffer, sizeof(buffer), "%s", input);</div>
+                    </div>
+                </div>
+
+                <!-- Bug 6: Dangling Pointer -->
+                <div class="bug-item">
+                    <div class="bug-header" onclick="toggleBug(this)">
+                        <div class="bug-title">Pointeurs Pendants</div>
+                        <span class="bug-severity severity-critical">CRITIQUE</span>
+                        <span>Utilisation après libération</span>
+                    </div>
+                    <div class="bug-details">
+                        <div class="code-block" data-lang="C">
+// ❌ BUG : Use-after-free
+char *get_temporary_string() {
+    char local_buffer[100] = "temporary data";
+    <span class="highlight-error">return local_buffer;</span>  // Retourne adresse de variable locale !
+}
+
+void main() {
+    char *ptr = get_temporary_string();
+    <span class="highlight-error">printf("%s", ptr);</span>  // Comportement indéfini !
+}</div>
+
+                        <div class="code-block" data-lang="C">
+// ✅ SOLUTIONS
+// 1. Allocation dynamique
+char *get_string() {
+    char *buffer = malloc(100);
+    strcpy(buffer, "data");
+    return buffer;  // N'oubliez pas de free() !
+}
+
+// 2. Buffer statique
+char *get_string() {
+    static char buffer[100] = "data";
+    return buffer;  // Valide pendant toute l'exécution
+}
+
+// 3. Buffer fourni par l'appelant
+void get_string(char *buffer, size_t size) {
+    strncpy(buffer, "data", size - 1);
+    buffer[size - 1] = '\0';
+}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Catégorie 4: Bugs de Concurrence -->
+        <div class="bug-category">
+            <div class="category-header concurrency-bugs" onclick="toggleCategory(this)">
+                ⚡ Bugs de Concurrence et Interruptions
+            </div>
+            <div class="category-content">
+                <!-- Bug 7: Race Condition -->
+                <div class="bug-item">
+                    <div class="bug-header" onclick="toggleBug(this)">
+                        <div class="bug-title">Conditions de Course Subtiles</div>
+                        <span class="bug-severity severity-critical">CRITIQUE</span>
+                        <span>Variables partagées entre main et ISR</span>
+                    </div>
+                    <div class="bug-details">
+                        <div class="code-block" data-lang="C">
+// ❌ BUG : Variable partagée sans protection
+uint16_t sensor_value = 0;  // Partagée entre main() et ISR
+
+// Routine d'interruption
+void __interrupt() timer_isr() {
+    <span class="highlight-error">sensor_value = read_adc();</span>  // Écriture 16 bits
+}
+
+void main() {
+    while(1) {
+        <span class="highlight-error">uint16_t local_copy = sensor_value;</span>  // Lecture 16 bits
+        // Sur 8-bit MCU : lecture en 2 opérations !
+        // Risque de lecture de valeur corrompue
+        process_sensor(local_copy);
+    }
+}</div>
+
+                        <div class="warning-box">
+                            <strong>Problème :</strong> Sur MCU 8-bit, les accès 16-bit ne sont pas atomiques
+                        </div>
+
+                        <div class="code-block" data-lang="C">
+// ✅ SOLUTIONS
+// 1. Désactivation temporaire des interruptions
+uint16_t read_sensor_safe() {
+    di();  // Disable interrupts
+    uint16_t value = sensor_value;
+    ei();  // Enable interrupts
+    return value;
+}
+
+// 2. Utilisation de variables atomiques
+volatile uint8_t sensor_high, sensor_low;
+
+void __interrupt() timer_isr() {
+    uint16_t temp = read_adc();
+    sensor_low = temp & 0xFF;
+    sensor_high = temp >> 8;  // Ordre important !
+}
+
+// 3. Flag de synchronisation
+volatile bool sensor_ready = false;
+volatile uint16_t sensor_buffer;
+
+void main() {
+    if (sensor_ready) {
+        uint16_t value = sensor_buffer;
+        sensor_ready = false;
+        process_sensor(value);
+    }
+}</div>
+                    </div>
+                </div>
+
+                <!-- Bug 8: Volatile Missing -->
+                <div class="bug-item">
+                    <div class="bug-header" onclick="toggleBug(this)">
+                        <div class="bug-title">L'Oubli du mot-clé volatile</div>
+                        <span class="bug-severity severity-high">ÉLEVÉ</span>
+                        <span>Quand le compilateur optimise trop</span>
+                    </div>
+                    <div class="bug-details">
+                        <div class="code-block" data-lang="C">
+// ❌ BUG : Variable modifiée par interruption sans volatile
+bool button_pressed = false;  // Modifiée par ISR
+
+void __interrupt() button_isr() {
+    button_pressed = true;
+}
+
+void main() {
+    while (!button_pressed) {  // Boucle potentiellement infinie !
+        // Le compilateur peut optimiser cette boucle en :
+        // if (!button_pressed) { while(1); }
+        do_other_work();
+    }
+}</div>
+
+                        <div class="danger-box">
+                            <strong>Le compilateur :</strong> "Cette variable ne change jamais dans main(), je peux optimiser !"
+                        </div>
+
+                        <div class="code-block" data-lang="C">
+// ✅ SOLUTION : volatile pour variables partagées
+<span class="highlight-correct">volatile bool button_pressed = false;</span>
+
+// Le compilateur est forcé de relire la variable à chaque accès</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Catégorie 5: Bugs de Macros -->
+        <div class="bug-category">
+            <div class="category-header macro-bugs" onclick="toggleCategory(this)">
+                🔧 Bugs de Macros et Préprocesseur
+            </div>
+            <div class="category-content">
+                <!-- Bug 9: Macro Side Effects -->
+                <div class="bug-item">
+                    <div class="bug-header" onclick="toggleBug(this)">
+                        <div class="bug-title">Effets de Bord des Macros</div>
+                        <span class="bug-severity severity-medium">MOYEN</span>
+                        <span>Quand MAX(i++, j++) fait des surprises</span>
+                    </div>
+                    <div class="bug-details">
+                        <div class="code-block" data-lang="C">
+// ❌ BUG : Macro dangereuse
+<span class="highlight-error">#define MAX(a, b) ((a) > (b) ? (a) : (b))</span>
+
+void test() {
+    int i = 5, j = 3;
+    int result = MAX(i++, j++);  // Que se passe-t-il ?
+    
+    // Expansion : ((i++) > (j++) ? (i++) : (j++))
+    // i++ est évalué DEUX FOIS !
+    // Résultat imprévisible
+}</div>
+
+                        <div class="demo-section">
+                            <strong>Simulation :</strong>
+                            <div class="demo-output">
+Avant : i=5, j=3
+MAX(i++, j++) évalue :
+  1. (i++) > (j++) → 5 > 3 → true
+  2. Donc retourne (i++) → 6
+Final : i=7, j=4 (i incrémenté 2 fois !)</div>
+                        </div>
+
+                        <div class="code-block" data-lang="C">
+// ✅ SOLUTIONS
+// 1. Fonction inline
+static inline int max_safe(int a, int b) {
+    return (a > b) ? a : b;
+}
+
+// 2. Macro avec variables temporaires (GCC)
+#define MAX(a, b) ({ \
+    __typeof__(a) _a = (a); \
+    __typeof__(b) _b = (b); \
+    (_a > _b) ? _a : _b; \
+})
+
+// 3. Documentation claire
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+// WARNING: Arguments evaluated multiple times!</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Catégorie 6: Bugs Hardware/Embarqué -->
+        <div class="bug-category">
+            <div class="category-header hardware-bugs" onclick="toggleCategory(this)">
+                🔌 Bugs Spécifiques à l'Embarqué
+            </div>
+            <div class="category-content">
+                <!-- Bug 10: Memory Alignment -->
+                <div class="bug-item">
+                    <div class="bug-header" onclick="toggleBug(this)">
+                        <div class="bug-title">Problèmes d'Alignement Mémoire</div>
+                        <span class="bug-severity severity-high">ÉLEVÉ</span>
+                        <span>Accès non alignés sur ARM</span>
+                    </div>
+                    <div class="bug-details">
+                        <div class="code-block" data-lang="C">
+// ❌ BUG : Accès non aligné
+uint8_t buffer[100];
+// ... remplissage du buffer
+
+<span class="highlight-error">uint32_t *ptr = (uint32_t *)(buffer + 1);</span>  // Adresse impaire !
+<span class="highlight-error">uint32_t value = *ptr;</span>  // CRASH sur ARM strict alignment
+
+// buffer + 1 n'est pas aligné sur 4 bytes</div>
+
+                        <div class="danger-box">
+                            <strong>Conséquence :</strong> Hard fault, exception, données corrompues selon l'architecture
+                        </div>
+
+                        <div class="code-block" data-lang="C">
+// ✅ SOLUTIONS
+// 1. Copie byte par byte
+uint32_t read_unaligned_uint32(uint8_t *ptr) {
+    uint32_t result;
+    memcpy(&result, ptr, sizeof(result));
+    return result;
+}
+
+// 2. Union pour accès sécurisé
+union {
+    uint8_t bytes[4];
+    uint32_t word;
+} converter;
+
+memcpy(converter.bytes, buffer + 1, 4);
+uint32_t value = converter.word;
+
+// 3. Attributs de packing
+struct __attribute__((packed)) data {
+    uint8_t flag;
+    uint32_t value;  // Peut être non aligné
+};</div>
+                    </div>
+                </div>
+
+                <!-- Bug 11: Endianness -->
+                <div class="bug-item">
+                    <div class="bug-header" onclick="toggleBug(this)">
+                        <div class="bug-title">Problèmes d'Endianness</div>
+                        <span class="bug-severity severity-medium">MOYEN</span>
+                        <span>Little vs Big Endian</span>
+                    </div>
+                    <div class="bug-details">
+                        <div class="code-block" data-lang="C">
+// ❌ BUG : Assomption d'endianness
+uint32_t network_data = 0x12345678;  // Big endian du réseau
+uint8_t *bytes = (uint8_t *)&network_data;
+
+<span class="highlight-error">uint8_t first_byte = bytes[0];</span>  // 0x12 ou 0x78 ?
+
+// Sur little endian : bytes[0] = 0x78
+// Sur big endian :    bytes[0] = 0x12</div>
+
+                        <div class="demo-section">
+                            <strong>Test d'endianness :</strong>
+                            <div class="interactive-demo">
+                                <div>Votre système est : <span id="endianness">?</span></div>
+                                <button onclick="testEndianness()">Détecter</button>
+                            </div>
+                        </div>
+
+                        <div class="code-block" data-lang="C">
+// ✅ SOLUTIONS
+// 1. Fonctions de conversion
+#include <arpa/inet.h>  // ou équivalent embarqué
+uint32_t host_value = ntohl(network_data);
+
+// 2. Macros portables
+#define SWAP32(x) (((x) >> 24) | (((x) & 0x00FF0000) >> 8) | \
+                   (((x) & 0x0000FF00) << 8) | ((x) << 24))
+
+// 3. Accès byte par byte
+uint32_t read_big_endian(uint8_t *data) {
+    return (data[0] << 24) | (data[1] << 16) | 
+           (data[2] << 8)  | data[3];
+}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section finale : Statistiques et conseils -->
+        <div class="bug-category">
+            <div class="category-header" style="background: linear-gradient(135deg, #27ae60, #229954);">
+                🎯 Conseils de Prévention
+            </div>
+            <div class="category-content expanded">
+                <div style="padding: 25px;">
+                    <h3>🛡️ Comment Éviter ces Pièges</h3>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0;">
+                        <div class="info-box">
+                            <strong>🔧 Outils de Développement</strong>
+                            <ul>
+                                <li>Compilateur avec warnings (-Wall -Wextra)</li>
+                                <li>Analyseurs statiques (PC-lint, Cppcheck)</li>
+                                <li>Outils de debug (Valgrind, AddressSanitizer)</li>
+                                <li>Tests unitaires exhaustifs</li>
+                            </ul>
+                        </div>
+
+                        <div class="info-box">
+                            <strong>📝 Bonnes Pratiques</strong>
+                            <ul>
+                                <li>Types explicites (int32_t vs int)</li>
+                                <li>Const correctness</li>
+                                <li>Vérification des limites</li>
+                                <li>Code reviews systématiques</li>
+                            </ul>
+                        </div>
+
+                        <div class="info-box">
+                            <strong>🧪 Tests Critiques</strong>
+                            <ul>
+                                <li>Valeurs limites (0, MAX, MIN)</li>
+                                <li>Cas d'erreur</li>
+                                <li>Tests sur hardware réel</li>
+                                <li>Tests de stress et endurance</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="warning-box">
+                        <strong>💡 Règle d'Or :</strong> 
+                        "Si un bug subtil peut exister, il existera. Assumez toujours le pire et codez défensivement !"
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleCategory(header) {
+            const content = header.nextElementSibling;
+            const isExpanded = content.classList.contains('expanded');
+            
+            if (isExpanded) {
+                content.classList.remove('expanded');
+                header.classList.add('collapsed');
+            } else {
+                content.classList.add('expanded');
+                header.classList.remove('collapsed');
+            }
+        }
+
+        function toggleBug(header) {
+            const details = header.nextElementSibling;
+            const isExpanded = details.classList.contains('expanded');
+            
+            if (isExpanded) {
+                details.classList.remove('expanded');
+            } else {
+                details.classList.add('expanded');
+            }
+        }
+
+        function expandAll() {
+            document.querySelectorAll('.category-content').forEach(content => {
+                content.classList.add('expanded');
+            });
+            document.querySelectorAll('.category-header').forEach(header => {
+                header.classList.remove('collapsed');
+            });
+            document.querySelectorAll('.bug-details').forEach(details => {
+                details.classList.add('expanded');
+            });
+        }
+
+        function collapseAll() {
+            document.querySelectorAll('.category-content').forEach(content => {
+                content.classList.remove('expanded');
+            });
+            document.querySelectorAll('.category-header').forEach(header => {
+                header.classList.add('collapsed');
+            });
+            document.querySelectorAll('.bug-details').forEach(details => {
+                details.classList.remove('expanded');
+            });
+        }
+
+        function demonstrateOverflow() {
+            const result = document.getElementById('overflowResult');
+            const wrapped = document.getElementById('wrappedResult');
+            
+            // Animation de la démonstration
+            let value = 300;
+            const interval = setInterval(() => {
+                value = (value > 255) ? value - 256 : value;
+                wrapped.textContent = value;
+                wrapped.style.color = value === 44 ? '#e74c3c' : '#f39c12';
+                
+                if (value === 44) {
+                    clearInterval(interval);
+                }
+            }, 200);
+        }
+
+        function testCharSign() {
+            // Test si char est signé ou non signé
+            const charMax = String.fromCharCode(127).charCodeAt(0) === 127 ? 127 : 255;
+            document.getElementById('charMax').textContent = charMax;
+            document.getElementById('charSign').textContent = charMax === 127 ? 'signé' : 'non signé';
+        }
+
+        function testEndianness() {
+            const buffer = new ArrayBuffer(4);
+            const uint32View = new Uint32Array(buffer);
+            const uint8View = new Uint8Array(buffer);
+            
+            uint32View[0] = 0x12345678;
+            
+            if (uint8View[0] === 0x78) {
+                document.getElementById('endianness').textContent = 'Little Endian';
+            } else {
+                document.getElementById('endianness').textContent = 'Big Endian';
+            }
+        }
+
+        // Animation d'entrée progressive
+        document.addEventListener('DOMContentLoaded', function() {
+            const categories = document.querySelectorAll('.bug-category');
+            categories.forEach((category, index) => {
+                category.style.animationDelay = `${index * 0.2}s`;
+            });
+        });
+    </script>
+</body>
+</html>
